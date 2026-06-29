@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Ultra Detector — Max Accuracy</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --bg:#03070d; --s1:#070f1a; --s2:#01050a; --border:#0e2a3d;
+  --glow:#00ffe7; --glow2:#ff3cac; --glow3:#ffd700;
+  --text:#a8d8ea; --dim:#2a4a60;
+  --font-hud:'Orbitron',monospace; --font-body:'Rajdhani',sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{
+  background:var(--bg); font-family:var(--font-body); color:var(--text);
+  min-height:100vh; display:flex; flex-direction:column; align-items:center;
+  overflow-x:hidden;
+}
+
+/* Welcome Page Styling */
+#welcomePage{
+  position:fixed; inset:0; z-index:100;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  background:radial-gradient(circle at center, #0b1624 0%, #03070d 100%);
+  text-align:center; padding:20px;
+}
+.welcome-title{
+  font-family:var(--font-hud); font-size:3rem; color:var(--glow);
+  letter-spacing:8px; margin-bottom:10px; text-shadow:0 0 20px rgba(0,255,231,0.3);
+}
+.welcome-sub{font-size:1rem; letter-spacing:4px; color:var(--dim); margin-bottom:40px; text-transform:uppercase;}
+.btn-main{
+  font-family:var(--font-hud); font-size:1.2rem; letter-spacing:3px;
+  padding:20px 50px; background:transparent; color:var(--glow);
+  border:2px solid var(--glow); cursor:pointer; transition:all .3s;
+}
+.btn-main:hover{background:var(--glow); color:#000; box-shadow:0 0 30px var(--glow);}
+
+/* Main App Wrapper */
+#mainApp{width:100%; display:none; padding:18px 12px 32px;}
+
+/* --- Existing Styles --- */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:999;background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,0.025) 2px,rgba(0,0,0,0.025) 4px);}
+.topbar{width:100%;max-width:980px;margin:0 auto 14px;display:flex;align-items:center;justify-content:space-between;padding-bottom:12px;border-bottom:1px solid var(--border);position:relative;}
+.topbar::after{content:'';position:absolute;bottom:-1px;left:0;width:140px;height:1px;background:var(--glow);box-shadow:0 0 10px var(--glow);}
+.brand{font-family:var(--font-hud);font-size:1.4rem;font-weight:900;letter-spacing:3px;color:#fff;}
+.brand em{color:var(--glow);font-style:normal;}
+.brand-sub{font-size:0.6rem;letter-spacing:4px;color:var(--dim);text-transform:uppercase;margin-top:3px;}
+.tag{font-family:var(--font-hud);font-size:0.52rem;letter-spacing:2px;padding:5px 12px;border:1px solid var(--glow);border-radius:2px;color:var(--glow);background:rgba(0,255,231,0.05);text-transform:uppercase;box-shadow:0 0 10px rgba(0,255,231,0.12);}
+.layout{width:100%;max-width:980px;margin:0 auto;display:flex;gap:12px;}
+.col-main{flex:1;min-width:0;display:flex;flex-direction:column;gap:10px;}
+.col-side{width:248px;flex-shrink:0;display:flex;flex-direction:column;gap:10px;}
+.frame-wrap{position:relative;border:1px solid var(--border);border-radius:6px;overflow:hidden;background:#000;aspect-ratio:16/9;}
+#canvas{display:block;width:100%;height:100%;object-fit:contain;}
+.corner{position:absolute;width:18px;height:18px;z-index:3;pointer-events:none;}
+.corner.tl{top:6px;left:6px;border-top:2px solid var(--glow);border-left:2px solid var(--glow);}
+.corner.tr{top:6px;right:6px;border-top:2px solid var(--glow);border-right:2px solid var(--glow);}
+.corner.bl{bottom:6px;left:6px;border-bottom:2px solid var(--glow);border-left:2px solid var(--glow);}
+.corner.br{bottom:6px;right:6px;border-bottom:2px solid var(--glow);border-right:2px solid var(--glow);}
+.hud-tl{position:absolute;top:12px;left:12px;z-index:5;display:flex;flex-direction:column;gap:5px;}
+.hud-tr{position:absolute;top:12px;right:12px;z-index:5;display:flex;flex-direction:column;gap:5px;align-items:flex-end;}
+.hud-bl{position:absolute;bottom:12px;left:12px;z-index:5;}
+.chip{font-family:var(--font-hud);font-size:0.58rem;letter-spacing:1px;padding:4px 10px;border-radius:3px;background:rgba(3,7,13,0.88);backdrop-filter:blur(4px);display:inline-flex;align-items:center;gap:6px;}
+.chip.c-green{color:#00ff88;border:1px solid rgba(0,255,136,0.35);box-shadow:0 0 8px rgba(0,255,136,0.1);}
+.chip.c-cyan{color:var(--glow);border:1px solid rgba(0,255,231,0.3);box-shadow:0 0 8px rgba(0,255,231,0.1);}
+.chip.c-pink{color:var(--glow2);border:1px solid rgba(255,60,172,0.35);}
+.chip.c-gold{color:var(--glow3);border:1px solid rgba(255,215,0,0.35);}
+.dot{width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1s infinite;}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+#loadOverlay{position:absolute;inset:0;z-index:20;background:rgba(3,7,13,0.95);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+.load-title{font-family:var(--font-hud);font-size:1rem;color:var(--glow);letter-spacing:3px;}
+.load-sub{font-size:0.7rem;letter-spacing:2px;color:var(--dim);text-transform:uppercase;}
+.pbar-wrap{width:260px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;}
+.pbar{height:100%;width:0%;background:var(--glow);border-radius:2px;transition:width .25s;box-shadow:0 0 8px var(--glow);}
+#loadMsg{font-size:0.65rem;color:var(--dim);letter-spacing:1px;text-align:center;}
+.controls{display:flex;gap:8px;flex-wrap:wrap;}
+button{font-family:var(--font-hud);font-size:0.62rem;letter-spacing:1.5px;text-transform:uppercase;padding:9px 18px;border-radius:3px;border:1px solid;cursor:pointer;transition:all .15s;font-weight:700;}
+.btn-start{background:var(--glow);color:#000;border-color:var(--glow);}
+.btn-start:hover:not(:disabled){box-shadow:0 0 16px var(--glow);filter:brightness(1.1);}
+.btn-stop{background:transparent;color:var(--glow2);border-color:var(--glow2);}
+.btn-stop:hover:not(:disabled){background:rgba(255,60,172,0.1);box-shadow:0 0 10px rgba(255,60,172,0.2);}
+.btn-ghost{background:transparent;color:var(--dim);border-color:var(--border);}
+.btn-ghost:hover:not(:disabled){color:var(--text);border-color:var(--dim);}
+button:disabled{opacity:.3;cursor:not-allowed;}
+.panel{background:var(--s1);border:1px solid var(--border);border-radius:6px;padding:14px;}
+.panel-title{font-family:var(--font-hud);font-size:0.58rem;letter-spacing:3px;color:var(--dim);text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);}
+.srow{margin-bottom:10px;}
+.srow label{display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text);margin-bottom:5px;letter-spacing:.5px;}
+.srow label span{color:var(--glow);font-family:var(--font-hud);font-size:0.65rem;}
+input[type=range]{width:100%;accent-color:var(--glow);cursor:pointer;}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;font-size:0.75rem;}
+.toggle{position:relative;width:38px;height:20px;}
+.toggle input{opacity:0;width:0;height:0;}
+.toggle-slider{position:absolute;inset:0;background:var(--border);border-radius:10px;cursor:pointer;transition:.2s;}
+.toggle-slider:before{content:'';position:absolute;height:14px;width:14px;left:3px;bottom:3px;background:var(--dim);border-radius:50%;transition:.2s;}
+.toggle input:checked+.toggle-slider{background:rgba(0,255,231,0.2);border:1px solid var(--glow);}
+.toggle input:checked+.toggle-slider:before{transform:translateX(18px);background:var(--glow);}
+.statusbar{display:flex;justify-content:space-between;align-items:center;padding:8px 14px;background:var(--s2);border:1px solid var(--border);border-radius:4px;font-family:var(--font-hud);font-size:0.6rem;letter-spacing:1px;}
+#statusTxt{color:var(--glow);}
+#detCount{color:#00ff88;font-weight:700;}
+.panel.results{flex:1;overflow-y:auto;max-height:400px;}
+#detList{display:flex;flex-direction:column;gap:7px;}
+.di{padding:9px 11px;background:rgba(255,255,255,0.02);border:1px solid var(--border);border-radius:4px;border-left:3px solid var(--glow);transition:background .15s;}
+.di:hover{background:rgba(0,255,231,0.04);}
+.di-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;}
+.di-class{font-family:var(--font-hud);font-size:0.8rem;color:#fff;letter-spacing:1px;}
+.di-score{font-size:0.65rem;font-weight:700;font-family:var(--font-hud);}
+.di-bar{height:2px;background:var(--border);border-radius:1px;overflow:hidden;margin-bottom:4px;}
+.di-bar-fill{height:100%;border-radius:1px;transition:width .3s;}
+.di-pos{font-size:0.6rem;color:var(--dim);}
+.di-model{font-size:0.55rem;color:var(--dim);letter-spacing:1px;margin-top:2px;}
+.note{font-size:0.68rem;color:var(--dim);line-height:1.7;padding:10px 12px;background:rgba(0,255,231,0.03);border:1px solid rgba(0,255,231,0.08);border-radius:4px;}
+.note strong{color:var(--glow);}
+@media(max-width:680px){.layout{flex-direction:column;}.col-side{width:100%;}.brand{font-size:1.1rem;}}
+</style>
+</head>
+<body>
+
+<div id="welcomePage">
+  <h1 class="welcome-title">OBJECT DETECTION</h1>
+  <div class="welcome-sub">Next-Gen Real-time Object Detection</div>
+  <button class="btn-main" id="enterBtn">START DETECTION</button>
+</div>
+
+<div id="mainApp">
+  <div class="topbar">
+    <div>
+      <div class="brand">ULTRA<em>DETECT</em></div>
+      <div class="brand-sub">Multi-Scale · Ensemble NMS · Max Accuracy</div>
+    </div>
+    <div class="tag">YOLOv8 + TF.js Dual Engine</div>
+  </div>
+
+  <div class="layout">
+    <div class="col-main">
+      <div class="frame-wrap">
+        <canvas id="canvas"></canvas>
+        <div class="corner tl"></div><div class="corner tr"></div>
+        <div class="corner bl"></div><div class="corner br"></div>
+
+        <div class="hud-tl">
+          <div class="chip c-pink" id="modelChip"><span class="dot"></span> LOADING</div>
+          <div class="chip c-gold" id="modeChip">MODE: INIT</div>
+        </div>
+        <div class="hud-tr">
+          <div class="chip c-green" id="fpsChip">-- FPS</div>
+          <div class="chip c-cyan" id="objChip">0 OBJ</div>
+        </div>
+        <div class="hud-bl">
+          <div class="chip c-cyan" id="resChip">RES: --</div>
+        </div>
+
+        <div id="loadOverlay">
+          <div class="load-title">ULTRA DETECT</div>
+          <div class="load-sub">Loading dual-engine model</div>
+          <div class="pbar-wrap"><div class="pbar" id="pbar"></div></div>
+          <div id="loadMsg">Initializing…</div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn-start" id="startBtn" disabled>▶ START</button>
+        <button class="btn-stop"  id="stopBtn"  disabled>■ STOP</button>
+        <button class="btn-ghost" id="camBtn">⟳ CAMERA</button>
+        <button class="btn-ghost" id="snapBtn" disabled>📷 SNAPSHOT</button>
+      </div>
+
+      <div class="statusbar">
+        <span id="statusTxt">Initializing…</span>
+        <span>OBJECTS: <span id="detCount">0</span></span>
+      </div>
+
+      <div class="note">
+        <strong>Dual-Engine Mode:</strong> Runs <strong>YOLOv8n ONNX</strong> + <strong>COCO-SSD MobileNetV2</strong> simultaneously.
+      </div>
+    </div>
+
+    <div class="col-side">
+      <div class="panel">
+        <div class="panel-title">// ACCURACY CONTROLS</div>
+        <div class="srow">
+          <label>Confidence Threshold <span id="confLbl">40%</span></label>
+          <input type="range" id="confR" min="15" max="85" value="40" step="5"/>
+        </div>
+        <div class="srow">
+          <label>NMS IoU <span id="iouLbl">0.40</span></label>
+          <input type="range" id="iouR" min="10" max="70" value="40" step="5"/>
+        </div>
+        <div class="srow">
+          <label>Temporal Smooth <span id="smLbl">4</span> frames</label>
+          <input type="range" id="smR" min="1" max="8" value="4" step="1"/>
+        </div>
+        <div class="toggle-row">
+          <span>Multi-Scale Inference</span>
+          <label class="toggle"><input type="checkbox" id="msToggle" checked/><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span>Dual-Engine Ensemble</span>
+          <label class="toggle"><input type="checkbox" id="ensToggle" checked/><span class="toggle-slider"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span>Edge Enhancement</span>
+          <label class="toggle"><input type="checkbox" id="edgeToggle"/><span class="toggle-slider"></span></label>
+        </div>
+      </div>
+
+      <div class="panel results">
+        <div class="panel-title">// LIVE DETECTIONS</div>
+        <div id="detList">
+          <div class="di" style="opacity:.35;border-left-color:var(--dim)">Awaiting detections…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/ort.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.17.0/dist/tf.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3/dist/coco-ssd.min.js"></script>
+<script>
+const CLASSES=['person','bicycle','car','motorcycle','airplane','bus','train','truck','boat','traffic light','fire hydrant','stop sign','parking meter','bench','bird','cat','dog','horse','sheep','cow','elephant','bear','zebra','giraffe','backpack','umbrella','handbag','tie','suitcase','frisbee','skis','snowboard','sports ball','kite','baseball bat','baseball glove','skateboard','surfboard','tennis racket','bottle','wine glass','cup','fork','knife','spoon','bowl','banana','apple','sandwich','orange','broccoli','carrot','hot dog','pizza','donut','cake','chair','couch','potted plant','bed','dining table','toilet','tv','laptop','mouse','remote','keyboard','cell phone','microwave','oven','toaster','sink','refrigerator','book','clock','vase','scissors','teddy bear','hair drier','toothbrush'];
+function clsColor(i){const h=(i*53+10)%360;return `hsl(${h},90%,62%)`;}
+
+class UltraDetector {
+  constructor(){
+    this.canvas   = document.getElementById('canvas');
+    this.ctx      = this.canvas.getContext('2d');
+    this.startBtn = document.getElementById('startBtn');
+    this.stopBtn  = document.getElementById('stopBtn');
+    this.camBtn   = document.getElementById('camBtn');
+    this.snapBtn  = document.getElementById('snapBtn');
+    this.confR    = document.getElementById('confR');
+    this.iouR     = document.getElementById('iouR');
+    this.smR      = document.getElementById('smR');
+    this.msToggle = document.getElementById('msToggle');
+    this.ensToggle= document.getElementById('ensToggle');
+    this.edgeToggle=document.getElementById('edgeToggle');
+    this.confLbl  = document.getElementById('confLbl');
+    this.iouLbl   = document.getElementById('iouLbl');
+    this.smLbl    = document.getElementById('smLbl');
+    this.statusTxt= document.getElementById('statusTxt');
+    this.detCount = document.getElementById('detCount');
+    this.detList  = document.getElementById('detList');
+    this.fpsChip  = document.getElementById('fpsChip');
+    this.objChip  = document.getElementById('objChip');
+    this.modelChip= document.getElementById('modelChip');
+    this.modeChip = document.getElementById('modeChip');
+    this.resChip  = document.getElementById('resChip');
+    this.pbar     = document.getElementById('pbar');
+    this.loadMsg  = document.getElementById('loadMsg');
+    this.overlay  = document.getElementById('loadOverlay');
+
+    this.yoloSession= null; this.tfModel= null; this.video= null;
+    this.stream= null; this.facingMode='environment'; this.isDetecting= false;
+    this.rafId= null; this.history=[]; this.confThresh=0.40; this.iouThresh=0.40; this.smoothN=4;
+    this.fc=0; this.lastTs=performance.now();
+
+    this.off640= document.createElement('canvas'); this.off640.width=this.off640.height=640; this.octx640=this.off640.getContext('2d');
+    this.off320= document.createElement('canvas'); this.off320.width=this.off320.height=320; this.octx320=this.off320.getContext('2d');
+
+    this.bindEvents();
+    this.boot();
+  }
+
+  bindEvents(){
+    this.startBtn.addEventListener('click', ()=>this.startDetection());
+    this.stopBtn.addEventListener('click',  ()=>this.stopDetection());
+    this.camBtn.addEventListener('click',   ()=>this.switchCamera());
+    this.snapBtn.addEventListener('click',  ()=>this.snapshot());
+    this.confR.addEventListener('input',()=>{this.confThresh=+this.confR.value/100;this.confLbl.textContent=this.confR.value+'%';});
+    this.iouR.addEventListener('input', ()=>{this.iouThresh=+this.iouR.value/100;this.iouLbl.textContent=(+this.iouR.value/100).toFixed(2);});
+    this.smR.addEventListener('input',  ()=>{this.smoothN=+this.smR.value;this.smLbl.textContent=this.smR.value;this.history=[];});
+  }
+
+  async boot(){ await this.setupCamera(); await this.loadEngines(); }
+  async setupCamera(){
+    this.setStatus('Camera…');
+    if(this.stream) this.stream.getTracks().forEach(t=>t.stop());
+    this.video=document.createElement('video');
+    this.video.playsInline=true; this.video.autoplay=true; this.video.muted=true;
+    try{
+      this.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:this.facingMode,width:{ideal:1920},height:{ideal:1080}},audio:false});
+      this.video.srcObject=this.stream;
+      await new Promise(res=>{this.video.onloadedmetadata=()=>{this.canvas.width=this.video.videoWidth||1280;this.canvas.height=this.video.videoHeight||720;this.resChip.textContent=`RES: ${this.canvas.width}x${this.canvas.height}`;res();};setTimeout(res,3000);});
+      await this.video.play().catch(()=>{}); this.idleRender();
+    }catch(e){this.setStatus('Cam error: '+e.message);}
+  }
+  idleRender(){ if(this.isDetecting) return; if(this.video&&this.video.readyState>=2) this.ctx.drawImage(this.video,0,0,this.canvas.width,this.canvas.height); requestAnimationFrame(()=>this.idleRender()); }
+  async switchCamera(){ this.facingMode=this.facingMode==='user'?'environment':'user'; if(this.isDetecting) this.stopDetection(); this.history=[]; await this.setupCamera(); }
+  snapshot(){ const a=document.createElement('a'); a.download='ultradetect_'+Date.now()+'.png'; a.href=this.canvas.toDataURL(); a.click(); }
+  async loadEngines(){
+    this.setProgress(5,'Configuring ONNX Runtime…'); ort.env.wasm.wasmPaths='https://cdn.jsdelivr.net/npm/onnxruntime-web@1.17.1/dist/'; ort.env.wasm.numThreads=1;
+    let yoloOk=false, tfOk=false;
+    try{
+      this.setProgress(10,'Downloading YOLOv8n ONNX…'); const resp=await fetch('https://huggingface.co/Xenova/yolov8n/resolve/main/onnx/model.onnx');
+      const total=+resp.headers.get('content-length')||0; const reader=resp.body.getReader(); const chunks=[]; let received=0;
+      while(true){ const{done,value}=await reader.read(); if(done) break; chunks.push(value); received+=value.length; if(total) this.setProgress(10+Math.round(received/total*55),'YOLOv8n: '+(received/1e6).toFixed(1)+' MB'); }
+      this.setProgress(68,'Compiling YOLO…'); let buf=new Uint8Array(received); let off=0; for(const c of chunks){buf.set(c,off);off+=c.length;}
+      this.yoloSession=await ort.InferenceSession.create(buf.buffer,{executionProviders:['wasm'],graphOptimizationLevel:'all'}); yoloOk=true;
+    }catch(e){console.warn(e);}
+    try{ this.setProgress(78,'Loading TF.js…'); this.tfModel=await cocoSsd.load({base:'mobilenet_v2'}); tfOk=true; }catch(e){console.warn(e);}
+    this.modelChip.textContent= (yoloOk?'YOLO ':'') + (tfOk?'+ TF ':''); this.modeChip.textContent='MODE: ENSEMBLE';
+    this.setProgress(100,'All engines ready!'); this.setStatus('Ready');
+    setTimeout(()=>{ this.overlay.style.display='none'; this.startBtn.disabled=false; this.snapBtn.disabled=false; },500);
+  }
+  setProgress(p,msg){this.pbar.style.width=p+'%';if(msg)this.loadMsg.textContent=msg;}
+  startDetection(){ if(this.isDetecting) return; this.isDetecting=true; this.startBtn.disabled=true; this.stopBtn.disabled=false; this.history=[]; this.lastTs=performance.now(); this.fc=0; this.loop(); }
+  stopDetection(){ this.isDetecting=false; cancelAnimationFrame(this.rafId); this.startBtn.disabled=false; this.stopBtn.disabled=true; this.idleRender(); }
+  async loop(){
+    if(!this.isDetecting) return;
+    if(!this.video||this.video.readyState<2){this.rafId=requestAnimationFrame(()=>this.loop());return;}
+    this.ctx.drawImage(this.video,0,0,this.canvas.width,this.canvas.height);
+    if(this.edgeToggle.checked) this.applyEdgeEnhancement();
+    let boxes=[];
+    try{
+        const useEnsemble=this.ensToggle.checked;
+        if(useEnsemble && this.yoloSession && this.tfModel){
+            const [yoloBoxes, tfBoxes]=await Promise.all([this.runYolo(this.msToggle.checked), this.runTF()]);
+            boxes=this.ensembleNMS([...yoloBoxes,...tfBoxes], this.iouThresh, 1);
+        } else if(this.yoloSession){ boxes=this.nms(await this.runYolo(this.msToggle.checked),this.iouThresh); }
+        else if(this.tfModel){ boxes=this.nms(await this.runTF(),this.iouThresh); }
+    }catch(e){}
+    boxes=boxes.filter(b=>b.score>=this.confThresh);
+    boxes=this.temporalSmooth(boxes);
+    this.drawBoxes(boxes); this.updatePanel(boxes); this.updateFPS();
+    this.rafId=requestAnimationFrame(()=>this.loop());
+  }
+  applyEdgeEnhancement(){ const w=this.canvas.width, h=this.canvas.height; const id=this.ctx.getImageData(0,0,w,h); const d=id.data, out=new Uint8ClampedArray(d.length); const kernel=[-1,-1,-1,-1,9,-1,-1,-1,-1]; for(let y=1;y<h-1;y++){ for(let x=1;x<w-1;x++){ const i=(y*w+x)*4; for(let c=0;c<3;c++){ let v=0; for(let ky=-1;ky<=1;ky++) for(let kx=-1;kx<=1;kx++) v+=d[((y+ky)*w+(x+kx))*4+c]*kernel[(ky+1)*3+(kx+1)]; out[i+c]=Math.min(255,Math.max(0,v)); } out[i+3]=255; } } for(let i=0;i<d.length;i+=4){ d[i]=d[i]*0.6+out[i]*0.4; d[i+1]=d[i+1]*0.6+out[i+1]*0.4; d[i+2]=d[i+2]*0.6+out[i+2]*0.4; } this.ctx.putImageData(id,0,0); }
+  async runYolo(ms){ const scales=ms?[640,480,320]:[640]; const all=[]; for(const sz of scales){ try{ all.push(...(await this.yoloInfer(sz))); }catch(e){} } return all; }
+  async yoloInfer(sz){
+    const W=sz, H=sz; const oc=W===640?this.off640:this.off320; const ox_=W===640?this.octx640:this.octx320; if(oc.width!==W){oc.width=W;oc.height=H;}
+    const vw=this.video.videoWidth, vh=this.video.videoHeight; const sc=Math.min(W/vw,H/vh); const sw=vw*sc, sh=vh*sc, ox=(W-sw)/2, oy=(H-sh)/2;
+    ox_.fillStyle='#808080'; ox_.fillRect(0,0,W,H); ox_.drawImage(this.video,0,0,vw,vh,ox,oy,sw,sh);
+    const data=ox_.getImageData(0,0,W,H).data, t=new Float32Array(3*W*H);
+    for(let i=0;i<W*H;i++){ t[i]=data[i*4]/255; t[W*H+i]=data[i*4+1]/255; t[2*W*H+i]=data[i*4+2]/255; }
+    const out=await this.yoloSession.run({images:new ort.Tensor('float32',t,[1,3,H,W])}); const k=Object.keys(out)[0], d=out[k].data, n=out[k].dims[2], sx=this.canvas.width/vw, sy=this.canvas.height/vh, res=[];
+    for(let i=0;i<n;i++){ const cx=d[i], cy=d[n+i], bw=d[2*n+i], bh=d[3*n+i]; let m=0, cl=0; for(let c=0;c<80;c++){ const s=d[(4+c)*n+i]; if(s>m){m=s;cl=c;} } if(m<0.15) continue; res.push({class:CLASSES[cl],classIdx:cl,score:m,bbox:[((cx-bw/2)-ox)/sc*sx,((cy-bh/2)-oy)/sc*sy,bw/sc*sx,bh/sc*sy],src:'yolo'}); } return res;
+  }
+  async runTF(){ const p=await this.tfModel.detect(this.video); const sx=this.canvas.width/this.video.videoWidth, sy=this.canvas.height/this.video.videoHeight; return p.map(b=>({class:b.class,classIdx:CLASSES.indexOf(b.class),score:b.score,bbox:[b.bbox[0]*sx,b.bbox[1]*sy,b.bbox[2]*sx,b.bbox[3]*sy],src:'tf'})); }
+  ensembleNMS(p,i,v){ const k=this.nms(p,i); return v<=1?k:k.filter(b=>new Set(p.filter(x=>x.class===b.class && this.iou(b.bbox,x.bbox)>0.3).map(s=>s.src)).size>=v); }
+  iou(a,b){ const ax2=a[0]+a[2],ay2=a[1]+a[3],bx2=b[0]+b[2],by2=b[1]+b[3],iw=Math.max(0,Math.min(ax2,bx2)-Math.max(a[0],b[0])),ih=Math.max(0,Math.min(ay2,by2)-Math.max(a[1],b[1])),inter=iw*ih,u=a[2]*a[3]+b[2]*b[3]-inter; return u>0?inter/u:0; }
+  nms(p,thr){ const s=[...p].sort((a,b)=>b.score-a.score), k=[], u=new Set(); for(let i=0;i<s.length;i++){ if(u.has(i)) continue; k.push(s[i]); for(let j=i+1;j<s.length;j++){ if(!u.has(j)&&s[i].class===s[j].class&&this.iou(s[i].bbox,s[j].bbox)>thr) u.add(j); } } return k; }
+  temporalSmooth(c){ this.history.push(c); if(this.history.length>this.smoothN) this.history.shift(); const all=this.history.flat(), groups={}; all.forEach(p=>(groups[p.class]=groups[p.class]||[]).push(p)); const min=Math.max(1,Math.ceil(this.history.length/2)), res=[]; for(const cls in groups){ const p=groups[cls]; if(p.length<min) continue; const clus=[]; p.forEach(pt=>{ const cx=pt.bbox[0]+pt.bbox[2]/2, cy=pt.bbox[1]+pt.bbox[3]/2; let m=null; for(const c of clus){if(Math.abs(cx-c.cx/c.n)<160&&Math.abs(cy-c.cy/c.n)<160){m=c;break;}} if(m){m.cx+=cx;m.cy+=cy;m.bx+=pt.bbox[0];m.by+=pt.bbox[1];m.bw+=pt.bbox[2];m.bh+=pt.bbox[3];m.score+=pt.score;m.n++;} else clus.push({cx,cy,bx:pt.bbox[0],by:pt.bbox[1],bw:pt.bbox[2],bh:pt.bbox[3],score:pt.score,n:1,class:cls,idx:pt.classIdx}); }); clus.forEach(c=>{ if(c.n<min) return; res.push({class:c.class,classIdx:c.idx,score:c.score/c.n,bbox:[c.bx/c.n,c.by/c.n,c.bw/c.n,c.bh/c.n],src:'smooth'}); }); } return res; }
+  drawBoxes(b){ b.forEach(b=>{ const [x,y,w,h]=b.bbox, c=clsColor(b.classIdx); this.ctx.shadowColor=c; this.ctx.shadowBlur=12; this.ctx.strokeStyle=c; this.ctx.lineWidth=2; this.ctx.strokeRect(x,y,w,h); this.ctx.shadowBlur=0; this.ctx.fillStyle=c.replace('hsl','hsla').replace(')',',0.12)'); this.ctx.fillRect(x,y,w*b.score,4); const l=`${b.class.toUpperCase()} ${(b.score*100).toFixed(0)}%`; this.ctx.font='bold 12px Orbitron,monospace'; const tw=this.ctx.measureText(l).width, lx=x, ly=y>22?y-22:y+h+3; this.ctx.fillStyle=c; this.ctx.fillRect(lx,ly,tw+10,20); this.ctx.fillStyle='#000'; this.ctx.fillText(l,lx+5,ly+14); }); }
+  updatePanel(b){ this.detCount.textContent=b.length; this.objChip.textContent=b.length+' OBJ'; this.detList.innerHTML=b.length?'':'<div class="di" style="opacity:.35;border-left-color:var(--dim)">No detections above threshold</div>'; [...b].sort((a,b)=>b.score-a.score).forEach(x=>{ const p=(x.score*100).toFixed(1), c=clsColor(x.classIdx), el=document.createElement('div'); el.className='di'; el.style.borderLeftColor=c; el.innerHTML=`<div class="di-top"><span class="di-class">${x.class}</span><span class="di-score" style="color:${c}">${p}%</span></div><div class="di-bar"><div class="di-bar-fill" style="width:${p}%;background:${c}"></div></div><div class="di-pos">[${x.bbox.map(n=>Math.round(n)).join(', ')}]</div>`; this.detList.appendChild(el); }); }
+  updateFPS(){ this.fc++; const n=performance.now(), d=n-this.lastTs; if(d>=1000){ this.fpsChip.textContent=Math.round(this.fc*1000/d)+' FPS'; this.fc=0; this.lastTs=n; } }
+  setStatus(m){this.statusTxt.textContent=m;}
+  cleanup(){this.stopDetection();if(this.stream)this.stream.getTracks().forEach(t=>t.stop());}
+}
+
+// Logic to switch screens
+document.getElementById('enterBtn').addEventListener('click', () => {
+    document.getElementById('welcomePage').style.display = 'none';
+    document.getElementById('mainApp').style.display = 'block';
+    const app = new UltraDetector();
+});
+</script>
+</body>
+</html>
